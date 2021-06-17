@@ -1,0 +1,35 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "storageaccountname": {
+            "value": "AZDevopsjune2022"
+        },
+        "virtualnetworkname": {
+            "value": "test-vnet-01"
+        },
+        "subnet1": {
+            "value": "test-snet-01"
+        },
+        "subnet2": {
+            "value": "test-snet-02"
+        },
+        "publicipname": {
+            "value": "testpubip01"
+        },
+        "virtualmachinename": {
+            "value": "test-vm-01"
+        },
+        "adminusername": {
+            "value": "azureuser"
+        },
+        "adminPassword": {
+            "reference": {
+              "keyVault": {
+                "id": "/subscriptions/c1176a1e-0a02-40ec-9eca-2634742166c6/resourceGroups/test/providers/Microsoft.KeyVault/vaults/test-kv-623"
+              },
+              "secretName": "windowsvmpassword"
+           }
+        }
+    }
+}

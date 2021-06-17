@@ -1,0 +1,211 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "storageaccountname": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the storage account"
+            }
+        },
+        "virtualnetworkname": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the Virtual network"
+            }
+        },
+        "subnet1": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the subnet1"
+            }
+        },
+        "subnet2": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the subnet2"
+            }
+        },
+        "publicipname": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the pubicip"
+            }
+        },
+        "virtualmachinename": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the Virtual Machine"
+            }
+        },
+        "adminusername": {
+           "type": "string",
+           "metadata": {
+                "description": "Name of the admin user"
+            }
+        },
+        "adminpassword": {
+           "type": "string",
+           "metadata": {
+                "description": "Admin Password"
+            }
+        }
+    },
+    "variables": {
+        "vnetaddressprefix": ["10.0.0.0/16"],
+        "subnet1addressprefix": "10.0.0.0/24",
+        "subnet2addressprefix": "10.0.1.0/24",
+        "tags" : {
+                "createdby": "Ramakrishna",
+                "project" : "FORD",
+                "Environment" : "Dev",
+                "Costcenter" : "1000"
+            },
+        "Networkinterface": "test-nic",
+        "networkSecurityGroupName" : "test-nsg"   
+    },
+    "resources": [
+        {
+            "name": "[toLower(parameters('storageaccountname'))]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2015-06-15",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "accountType": "Standard_LRS"
+            }
+        },
+        {
+            "name": "[parameters('virtualnetworkname')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": "[variables('vnetaddressprefix')]"
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnet1')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnet1addressprefix')]"
+                        }
+                    },
+                    {
+                        "name": "[parameters('subnet2')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnet2addressprefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('publicipname')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2019-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tags')]",
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "testdns2021"
+                }
+            }
+        },
+        {
+            "name": "[variables('Networkinterface')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tags')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicipname'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualnetworkname'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipConfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "10.0.0.4",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicipname'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualnetworkname'), parameters('subnet1'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+        "type": "Microsoft.Network/networkSecurityGroups",
+        "apiVersion": "2020-06-01",
+        "name": "[variables('networkSecurityGroupName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+            "securityRules": [
+            {
+                "name": "default-allow-3389",
+                "properties": {
+                "priority": 1000,
+                "access": "Allow",
+                "direction": "Inbound",
+                "destinationPortRange": "3389",
+                "protocol": "Tcp",
+                "sourcePortRange": "*",
+                "sourceAddressPrefix": "*",
+                "destinationAddressPrefix": "*"
+                }
+            }
+            ]
+        }
+        },
+        {
+            "name": "[parameters('virtualmachinename')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2017-03-30",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', toLower(parameters('storageaccountname')))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('Networkinterface'))]"
+            ],
+            "tags": "[variables('tags')]",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_Ds1_V2"
+                },
+                "osProfile": {
+                    "computerName": "WSAPP20001",
+                    "adminUsername": "[parameters('adminusername')]",
+                    "adminPassword": "[parameters('adminpassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2019-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "windowsVM1OSDisk",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('Networkinterface'))]"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
