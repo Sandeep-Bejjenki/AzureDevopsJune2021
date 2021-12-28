@@ -1,17 +1,12 @@
-# HTML
-# Archive your static HTML project and save it with the build record.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
 
-trigger:
-- main
-
-pool:
-  vmImage: ubuntu-latest
-
-steps:
-- task: ArchiveFiles@2
+- task: AzureResourceManagerTemplateDeployment@3
   inputs:
-    rootFolderOrFile: '$(build.sourcesDirectory)'
-    includeRootFolder: false
-- task: PublishBuildArtifacts@1
+    deploymentScope: 'Subscription'
+    azureResourceManagerConnection: 'Azure subscription 1(295f850a-63a4-4ede-99a0-0bbbb590d325)'
+    subscriptionId: '295f850a-63a4-4ede-99a0-0bbbb590d325'
+    location: 'East US'
+    templateLocation: 'URL of the file'
+    csmFileLink: 'https://github.com/Sandeep-Bejjenki/AzureDevopsJune2021/blob/98ee716b7447c490f308bc401a4cc23234490b9d/template.json'
+    csmParametersFileLink: 'https://github.com/Sandeep-Bejjenki/AzureDevopsJune2021/blob/98ee716b7447c490f308bc401a4cc23234490b9d/parameters.json'
+    deploymentMode: 'Incremental'
+    deploymentName: 'Devops_Deploy1'
